@@ -1,0 +1,15 @@
+---
+#configuration for kafka_v0.5.app
+#timestamp: Yes
+#producer: Yes
+producer: No
+bootstrap.servers: "10.53.37.73:9092"
+sasl.mechanisms: "PLAIN"
+security.protocol: "SASL_PLAINTEXT"
+sasl.username: "user"
+sasl.password: "secret1"
+ssl.ca.location: ""
+group.id: "test"
+topics: "gnf.network.telemetry"
+#auto.offset.reset: "earliest"
+auto.offset.reset: "latest"
