@@ -1,5 +1,5 @@
 ---
-#configuration for kafka_v0.5.app
+#configuration for kafka_multi-v0.1.app
 #timestamp: Yes
 #producer: Yes
 producer: No
