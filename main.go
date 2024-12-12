@@ -88,7 +88,7 @@ func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *syn
 
 	run := true
 	for run {
-		fmt.Printf("waiting for kafka message\n")
+		//fmt.Printf("waiting for kafka message\n")
 		select {
 		case <-quit:
 			fmt.Printf("Terminating consumer %d\n", id)
@@ -102,7 +102,7 @@ func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *syn
 			switch e := event.(type) {
 			case *kafka.Message:
 				// Process the message received.
-				//fmt.Printf("Got a kafka message\n")
+				fmt.Printf("Got a kafka message\n")
 				kafkaMessage := string(e.Value)
 				if config_file.Timestamp {
 					var metadata Metadata
@@ -195,6 +195,7 @@ func (w *Worker) Start() {
 	go func() {
 		for message := range w.messageQueue { //Process the message queue via channel
 			//Print Message with timestamp
+			fmt.Printf("From thread:%d \n", w.id)
 			fmt.Printf("Partition:%+v Timestamp:%+v: %s\n", message.Metadata.KafkaPartition, message.Metadata.KafakTimestamp, message.Msg)
 		}
 	}()
