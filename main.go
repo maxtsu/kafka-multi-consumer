@@ -102,22 +102,17 @@ func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *syn
 			switch e := event.(type) {
 			case *kafka.Message:
 				// Process the message received.
-				fmt.Printf("Got a kafka message\n")
-				kafkaMessage := string(e.Value)
-				if config_file.Timestamp {
-					var metadata Metadata
-					metadata.KafakTimestamp = e.Timestamp.UnixNano() //metadata timestamp
-					metadata.KafkaPartition = e.TopicPartition.Partition
-					copy_e_value := make([]byte, len([]byte(e.Value)))
-					copy_e_value = append([]byte(nil), []byte(e.Value)...)
+				fmt.Printf("consumer: %d Got a kafka message\n", id)
+				var metadata Metadata
+				metadata.KafakTimestamp = e.Timestamp.UnixNano() //metadata timestamp
+				metadata.KafkaPartition = e.TopicPartition.Partition
+				copy_e_value := make([]byte, len([]byte(e.Value)))
+				copy_e_value = append([]byte(nil), []byte(e.Value)...)
 
-					message := MessageChannel{Msg: copy_e_value, Metadata: metadata}
-					// Send message to workpool goroutines
-					workerPool.Submit(message) // send message&device into pool of threads
+				message := MessageChannel{Msg: copy_e_value, Metadata: metadata}
+				// Send message to workpool goroutines
+				workerPool.Submit(message) // send message&device into pool of threads
 
-				} else {
-					fmt.Printf("%s\n", kafkaMessage) //Message in single string
-				}
 				if e.Headers != nil {
 					fmt.Printf("%% Headers: %v\n", e.Headers)
 				}
