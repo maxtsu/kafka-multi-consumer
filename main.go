@@ -27,6 +27,32 @@ func main() {
 		fmt.Println("kafka-config.yaml Unmarshall error", err)
 	}
 	fmt.Printf("kafka-config.yaml: %+v\n", configYaml)
+
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Create worker pool for processing messages in threads
+	workerPool := NewWorkerPool(workerThreads) // Create a worker pool
+	workerPool.Start()
+
+	var wg sync.WaitGroup
+	quit := make(chan bool)
+	// Start multiple consumer workers
+	for i := 0; i < numConsumers; i++ {
+		wg.Add(1)
+		go consumerWorker(i, configYaml, &wg, quit, *workerPool)
+	}
+
+	sig := <-sigchan
+	fmt.Printf("Caught signal %v: terminating consumers\n", sig)
+	close(quit)
+	wg.Wait()
+
+	fmt.Println("All consumers stopped.")
+
+}
+
+func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan bool, workerPool WorkerPool) {
 	kafka_config := &kafka.ConfigMap{
 		"bootstrap.servers":  configYaml.BootstrapServers,
 		"sasl.mechanisms":    configYaml.SaslMechanisms,
@@ -43,43 +69,15 @@ func main() {
 		// Whether or not we store offsets automatically.
 		"enable.auto.offset.store": false,
 	}
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Create worker pool for processing messages in threads
-	workerPool := NewWorkerPool(workerThreads) // Create a worker pool
-	workerPool.Start()
-
-	var wg sync.WaitGroup
-	quit := make(chan bool)
-	// Start multiple consumer workers
-	for i := 0; i < numConsumers; i++ {
-		wg.Add(1)
-		go consumerWorker(i, kafka_config, configYaml, &wg, quit, *workerPool)
-	}
-
-	sig := <-sigchan
-	fmt.Printf("Caught signal %v: terminating consumers\n", sig)
-	close(quit)
-	wg.Wait()
-
-	fmt.Println("All consumers stopped.")
-
-}
-
-func createConsumer(config *kafka.ConfigMap) (*kafka.Consumer, error) {
-	return kafka.NewConsumer(config)
-}
-
-func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *sync.WaitGroup, quit <-chan bool, workerPool WorkerPool) {
 	defer wg.Done()
-	consumer, err := createConsumer(config)
+	consumer, err := kafka.NewConsumer(kafka_config)
 	if err != nil {
 		fmt.Printf("Consumer %d: Failed to create consumer: %v\n", id, err)
 		return
 	}
 	defer consumer.Close()
-	err = consumer.Subscribe(config_file.Topics, nil)
+	err = consumer.Subscribe(configYaml.Topics, nil)
 	if err != nil {
 		fmt.Printf("Consumer %d: Failed to subscribe to topic: %v\n", id, err)
 		return
