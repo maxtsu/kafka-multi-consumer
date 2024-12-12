@@ -3,7 +3,7 @@
 #timestamp: Yes
 #producer: Yes
 producer: No
-bootstrap.servers: "10.53.37.73:9092"
+bootstrap.servers: "10.54.19.192:9092"
 sasl.mechanisms: "PLAIN"
 security.protocol: "SASL_PLAINTEXT"
 sasl.username: "user"
