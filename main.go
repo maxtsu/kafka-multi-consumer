@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"gopkg.in/yaml.v2"
@@ -16,15 +15,12 @@ import (
 // Version 0.5
 const config_file = "kafka-config.yaml"
 const numConsumers = 3
+const workerThreads = 4
 
 func main() {
 	fmt.Println("kafka multiple consumer v0.1")
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
-
 	// Read the config file
 	byteResult := ReadFile(config_file)
-
 	var configYaml Config
 	err := yaml.Unmarshal(byteResult, &configYaml)
 	if err != nil {
@@ -47,15 +43,23 @@ func main() {
 		// Whether or not we store offsets automatically.
 		"enable.auto.offset.store": false,
 	}
+	sigchan := make(chan os.Signal, 1)
+	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Create worker pool for processing messages in threads
+	workerPool := NewWorkerPool(workerThreads) // Create a worker pool
+	workerPool.Start()
 
 	var wg sync.WaitGroup
 	quit := make(chan bool)
 	// Start multiple consumer workers
 	for i := 0; i < numConsumers; i++ {
 		wg.Add(1)
-		go consumerWorker(i, kafka_config, configYaml, &wg, quit)
+		go consumerWorker(i, kafka_config, configYaml, &wg, quit, *workerPool)
 	}
 
+	sig := <-sigchan
+	fmt.Printf("Caught signal %v: terminating consumers\n", sig)
 	close(quit)
 	wg.Wait()
 
@@ -67,7 +71,7 @@ func createConsumer(config *kafka.ConfigMap) (*kafka.Consumer, error) {
 	return kafka.NewConsumer(config)
 }
 
-func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *sync.WaitGroup, quit <-chan bool) {
+func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *sync.WaitGroup, quit <-chan bool, workerPool WorkerPool) {
 	defer wg.Done()
 	consumer, err := createConsumer(config)
 	if err != nil {
@@ -101,12 +105,16 @@ func consumerWorker(id int, config *kafka.ConfigMap, config_file Config, wg *syn
 				//fmt.Printf("Got a kafka message\n")
 				kafkaMessage := string(e.Value)
 				if config_file.Timestamp {
-					timestamp := (time.Now()).UnixMilli()
-					metaDataTimestamp := e.Timestamp.UnixNano() //metadata timestamp
-					partition := e.TopicPartition
-					//Print Message with timestamp
-					fmt.Printf("%+v: %+v: %s %d %s\n", timestamp, partition, e.Key, metaDataTimestamp, kafkaMessage)
-					//fmt.Printf("%+v: %+v %s\n", timestamp, partition, e.Key) //Reduced output of keys only
+					var metadata Metadata
+					metadata.KafakTimestamp = e.Timestamp.UnixNano() //metadata timestamp
+					metadata.KafkaPartition = e.TopicPartition.Partition
+					copy_e_value := make([]byte, len([]byte(e.Value)))
+					copy_e_value = append([]byte(nil), []byte(e.Value)...)
+
+					message := MessageChannel{Msg: copy_e_value, Metadata: metadata}
+					// Send message to workpool goroutines
+					workerPool.Submit(message) // send message&device into pool of threads
+
 				} else {
 					fmt.Printf("%s\n", kafkaMessage) //Message in single string
 				}
@@ -156,4 +164,56 @@ func ReadFile(fileName string) []byte {
 	byteResult, _ := io.ReadAll(file)
 	file.Close()
 	return byteResult
+}
+
+type Metadata struct { // Metadata from kafka
+	KafakTimestamp int64 // kafka metadata timestamp
+	KafkaPartition int32 // kafka partition
+}
+
+type MessageChannel struct { // Type of data to send in message channel to worker
+	Msg      []byte   // Received message to process
+	Metadata Metadata // kafka metadata
+}
+
+// Initialise workerpool with max thread number
+func NewWorkerPool(workerCount int) *WorkerPool {
+	return &WorkerPool{
+		messageQueue: make(chan MessageChannel),
+		workerCount:  workerCount,
+	}
+}
+
+// goroutine worker pool implementation for processing messages in threads
+type Worker struct {
+	id           int
+	messageQueue <-chan MessageChannel
+}
+
+// Start running worker thread in goroutine
+func (w *Worker) Start() {
+	go func() {
+		for message := range w.messageQueue { //Process the message queue via channel
+			//Print Message with timestamp
+			fmt.Printf("Partition:%+v Timestamp:%+v: %s\n", message.Metadata.KafkaPartition, message.Metadata.KafakTimestamp, message.Msg)
+		}
+	}()
+}
+
+type WorkerPool struct {
+	messageQueue chan MessageChannel
+	workerCount  int // Maximum number of workers/threads
+}
+
+// Start number of running worker threads
+func (wp *WorkerPool) Start() {
+	for i := 0; i < wp.workerCount; i++ {
+		worker := Worker{id: i, messageQueue: wp.messageQueue}
+		worker.Start()
+	}
+}
+
+// Receives message and send to workerpool via channel
+func (wp *WorkerPool) Submit(msg MessageChannel) {
+	wp.messageQueue <- msg
 }
