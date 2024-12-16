@@ -153,6 +153,8 @@ type Config struct {
 	GroupID          string `yaml:"group.id"`
 	Topics           string `yaml:"topics"`
 	AutoOffset       string `yaml:"auto.offset.reset"`
+	AutoOffStore     string `yaml:"auto.offset.store"`
+	Devices          string `yaml:"devices"`
 }
 
 // Function to read text file return byteResult
