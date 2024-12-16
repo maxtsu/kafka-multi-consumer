@@ -71,7 +71,8 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 		// for this group.
 		"auto.offset.reset": configYaml.AutoOffset,
 		// Whether or not we store offsets automatically.
-		"enable.auto.offset.store": false,
+		"enable.auto.offset.store":      configYaml.AutoOffStore,
+		"partition.assignment.strategy": configYaml.PartitionStrategy,
 	}
 
 	defer wg.Done()
@@ -144,18 +145,19 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 
 // configuration file kafka-config.yaml
 type Config struct {
-	Timestamp        bool     `yaml:"timestamp"`
-	BootstrapServers string   `yaml:"bootstrap.servers"`
-	SaslMechanisms   string   `yaml:"sasl.mechanisms"`
-	SecurityProtocol string   `yaml:"security.protocol"`
-	SaslUsername     string   `yaml:"sasl.username"`
-	SaslPassword     string   `yaml:"sasl.password"`
-	SslCaLocation    string   `yaml:"ssl.ca.location"`
-	GroupID          string   `yaml:"group.id"`
-	Topics           string   `yaml:"topics"`
-	AutoOffset       string   `yaml:"auto.offset.reset"`
-	AutoOffStore     string   `yaml:"auto.offset.store"`
-	Devices          []string `yaml:"devices"`
+	Timestamp         bool     `yaml:"timestamp"`
+	BootstrapServers  string   `yaml:"bootstrap.servers"`
+	SaslMechanisms    string   `yaml:"sasl.mechanisms"`
+	SecurityProtocol  string   `yaml:"security.protocol"`
+	SaslUsername      string   `yaml:"sasl.username"`
+	SaslPassword      string   `yaml:"sasl.password"`
+	SslCaLocation     string   `yaml:"ssl.ca.location"`
+	GroupID           string   `yaml:"group.id"`
+	Topics            string   `yaml:"topics"`
+	AutoOffset        string   `yaml:"auto.offset.reset"`
+	AutoOffStore      bool     `yaml:"auto.offset.store"`
+	PartitionStrategy string   `yaml:"partition.assignment.strategy"`
+	Devices           []string `yaml:"devices"`
 }
 
 // Function to read text file return byteResult
