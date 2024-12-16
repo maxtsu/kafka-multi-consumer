@@ -15,9 +15,5 @@ topics: "gnf.network.telemetry"
 auto.offset.reset: "latest"
 auto.offset.store: No
 devices: 
-    - 
-      - address : "10.10.10.1"
-      - name : "host1"
-    - 
-      - address : "10.10.10.2"
-      - name : "host2"
+    - "10.10.10.1"
+    - "10.10.10.2

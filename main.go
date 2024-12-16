@@ -18,8 +18,7 @@ const config_file = "kafka-config.yaml"
 const numConsumers = 4
 const workerThreads = 4
 
-// var devices = map[string]string{"10.49.13.9": "host-1"}
-var devices []Device
+var devices []string
 
 func main() {
 	fmt.Println("kafka multiple consumer v0.1")
@@ -31,7 +30,6 @@ func main() {
 		fmt.Println("kafka-config.yaml Unmarshall error", err)
 	}
 	fmt.Printf("kafka-config.yaml: %+v\n", configYaml)
-
 	devices = configYaml.Devices
 
 	sigchan := make(chan os.Signal, 1)
@@ -157,12 +155,7 @@ type Config struct {
 	Topics           string   `yaml:"topics"`
 	AutoOffset       string   `yaml:"auto.offset.reset"`
 	AutoOffStore     string   `yaml:"auto.offset.store"`
-	Devices          []Device `yaml:"devices"`
-}
-
-type Device struct {
-	Address string `yaml:"address"`
-	Name    string `yaml:"name"`
+	Devices          []string `yaml:"devices"`
 }
 
 // Function to read text file return byteResult
@@ -231,14 +224,16 @@ func (wp *WorkerPool) Submit(msg MessageChannel) {
 }
 
 // Check kafka message key against list of devices
-func KafkaKeyCheck(key []byte, devices map[string]string) string {
+func KafkaKeyCheck(key []byte, devices []string) string {
 	keyString := strings.Split(string(key), ":")
 	source_ip := keyString[0]
-	device, ok := devices[source_ip]
-	fmt.Printf("KafkaKeycheck: %s \n", source_ip)
-	if ok {
-		return device // Return device if source IP in device list
-	} else {
-		return "" // Return nil if not in list
+	//device, ok := devices[source_ip]
+	src := ""
+	for _, address := range devices {
+		if address == source_ip {
+			src = source_ip
+			break
+		}
 	}
+	return src
 }
