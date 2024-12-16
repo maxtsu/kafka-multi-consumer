@@ -105,7 +105,7 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 				// Process the message received.
 				fmt.Printf("consumer: %d Got a kafka message\n", id)
 				device := KafkaKeyCheck(e.Key, devices)
-				if device != "" {
+				if device == "" {
 					fmt.Printf("consumer: %d Break\n", id)
 					break // kafka message key device not in list terminate switch-case
 				}
