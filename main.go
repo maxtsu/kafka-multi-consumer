@@ -18,7 +18,8 @@ const config_file = "kafka-config.yaml"
 const numConsumers = 4
 const workerThreads = 4
 
-var devices = map[string]string{"10.49.13.9": "host-1"}
+// var devices = map[string]string{"10.49.13.9": "host-1"}
+var devices map[string]string
 
 func main() {
 	fmt.Println("kafka multiple consumer v0.1")
@@ -30,6 +31,8 @@ func main() {
 		fmt.Println("kafka-config.yaml Unmarshall error", err)
 	}
 	fmt.Printf("kafka-config.yaml: %+v\n", configYaml)
+
+	devices = configYaml.Devices
 
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -154,7 +157,9 @@ type Config struct {
 	Topics           string `yaml:"topics"`
 	AutoOffset       string `yaml:"auto.offset.reset"`
 	AutoOffStore     string `yaml:"auto.offset.store"`
-	Devices          string `yaml:"devices"`
+	Devices          []struct {
+		Address string `yaml:"address"`
+	} `yaml:"devices"`
 }
 
 // Function to read text file return byteResult

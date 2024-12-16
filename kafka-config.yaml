@@ -14,4 +14,5 @@ topics: "gnf.network.telemetry"
 #auto.offset.reset: "earliest"
 auto.offset.reset: "latest"
 auto.offset.store: No
-devices: ""10.49.13.9": "host-1""
+devices: 
+    - address : "10.10.10.1"
