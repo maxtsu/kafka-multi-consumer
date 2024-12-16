@@ -16,4 +16,4 @@ auto.offset.reset: "latest"
 auto.offset.store: No
 devices: 
     - "10.10.10.1"
-    - "10.10.10.2
+    - "10.10.10.2"
