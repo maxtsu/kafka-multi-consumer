@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -14,8 +15,10 @@ import (
 
 // Version 0.5
 const config_file = "kafka-config.yaml"
-const numConsumers = 3
+const numConsumers = 4
 const workerThreads = 4
+
+var devices = map[string]string{"10.10.10.1": "host-1"}
 
 func main() {
 	fmt.Println("kafka multiple consumer v0.1")
@@ -101,6 +104,10 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 			case *kafka.Message:
 				// Process the message received.
 				fmt.Printf("consumer: %d Got a kafka message\n", id)
+				device := KafkaKeyCheck(e.Key, devices)
+				if device != "" {
+					break // kafka message key device not in list terminate switch-case
+				}
 				var metadata Metadata
 				metadata.KafakTimestamp = e.Timestamp.UnixNano() //metadata timestamp
 				metadata.KafkaPartition = e.TopicPartition.Partition
@@ -210,4 +217,17 @@ func (wp *WorkerPool) Start() {
 // Receives message and send to workerpool via channel
 func (wp *WorkerPool) Submit(msg MessageChannel) {
 	wp.messageQueue <- msg
+}
+
+// Check kafka message key against list of devices
+func KafkaKeyCheck(key []byte, devices map[string]string) string {
+	keyString := strings.Split(string(key), ":")
+	source_ip := keyString[0]
+	device, ok := devices[source_ip]
+	fmt.Printf("KafkaKeycheck: %s \n", source_ip)
+	if ok {
+		return device // Return device if source IP in device list
+	} else {
+		return "" // Return nil if not in list
+	}
 }
