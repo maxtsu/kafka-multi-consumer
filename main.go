@@ -112,8 +112,8 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 					fmt.Printf("consumer: %d Break\n", id)
 					_, err := consumer.StoreMessage(e)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "%% Error storing offset after message %s:\n",
-							e.TopicPartition)
+						fmt.Fprintf(os.Stderr, "%% Error storing offset after message %s: %+v\n",
+							e.TopicPartition, err)
 					}
 
 					break // kafka message key device not in list terminate switch-case
