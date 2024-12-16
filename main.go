@@ -18,7 +18,7 @@ const config_file = "kafka-config.yaml"
 const numConsumers = 4
 const workerThreads = 4
 
-var devices = map[string]string{"10.10.10.1": "host-1"}
+var devices = map[string]string{"10.49.13.9": "host-1"}
 
 func main() {
 	fmt.Println("kafka multiple consumer v0.1")
