@@ -90,6 +90,7 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 	fmt.Printf("Consumer %d: Started\n", id)
 
 	run := true
+
 	for run {
 		//fmt.Printf("waiting for kafka message\n")
 		select {
@@ -109,6 +110,12 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 				device := KafkaKeyCheck(e.Key, devices)
 				if device == "" {
 					fmt.Printf("consumer: %d Break\n", id)
+					_, err := consumer.StoreMessage(e)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "%% Error storing offset after message %s:\n",
+							e.TopicPartition)
+					}
+
 					break // kafka message key device not in list terminate switch-case
 				}
 				var metadata Metadata
@@ -126,8 +133,8 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 				}
 				_, err := consumer.StoreMessage(e)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "%% Error storing offset after message %s:\n",
-						e.TopicPartition)
+					fmt.Fprintf(os.Stderr, "%% Error storing offset after message %s: %+v\n",
+						e.TopicPartition, err)
 				}
 			case kafka.Error:
 				// Errors are informational, the client will try to
