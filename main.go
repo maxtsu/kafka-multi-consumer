@@ -157,8 +157,9 @@ type Config struct {
 	Topics           string `yaml:"topics"`
 	AutoOffset       string `yaml:"auto.offset.reset"`
 	AutoOffStore     string `yaml:"auto.offset.store"`
-	Devices          []struct {
-		Address string `yaml:"address"`
+	Devices          [][]struct {
+		Address string `yaml:"address,omitempty"`
+		Name    string `yaml:"name,omitempty"`
 	} `yaml:"devices"`
 }
 
