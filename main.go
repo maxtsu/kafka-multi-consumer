@@ -19,7 +19,7 @@ const numConsumers = 4
 const workerThreads = 4
 
 // var devices = map[string]string{"10.49.13.9": "host-1"}
-var devices map[string]string
+var devices []Device
 
 func main() {
 	fmt.Println("kafka multiple consumer v0.1")
@@ -146,21 +146,23 @@ func consumerWorker(id int, configYaml Config, wg *sync.WaitGroup, quit <-chan b
 
 // configuration file kafka-config.yaml
 type Config struct {
-	Timestamp        bool   `yaml:"timestamp"`
-	BootstrapServers string `yaml:"bootstrap.servers"`
-	SaslMechanisms   string `yaml:"sasl.mechanisms"`
-	SecurityProtocol string `yaml:"security.protocol"`
-	SaslUsername     string `yaml:"sasl.username"`
-	SaslPassword     string `yaml:"sasl.password"`
-	SslCaLocation    string `yaml:"ssl.ca.location"`
-	GroupID          string `yaml:"group.id"`
-	Topics           string `yaml:"topics"`
-	AutoOffset       string `yaml:"auto.offset.reset"`
-	AutoOffStore     string `yaml:"auto.offset.store"`
-	Devices          [][]struct {
-		Address string `yaml:"address,omitempty"`
-		Name    string `yaml:"name,omitempty"`
-	} `yaml:"devices"`
+	Timestamp        bool     `yaml:"timestamp"`
+	BootstrapServers string   `yaml:"bootstrap.servers"`
+	SaslMechanisms   string   `yaml:"sasl.mechanisms"`
+	SecurityProtocol string   `yaml:"security.protocol"`
+	SaslUsername     string   `yaml:"sasl.username"`
+	SaslPassword     string   `yaml:"sasl.password"`
+	SslCaLocation    string   `yaml:"ssl.ca.location"`
+	GroupID          string   `yaml:"group.id"`
+	Topics           string   `yaml:"topics"`
+	AutoOffset       string   `yaml:"auto.offset.reset"`
+	AutoOffStore     string   `yaml:"auto.offset.store"`
+	Devices          []Device `yaml:"devices"`
+}
+
+type Device struct {
+	Address string `yaml:"address"`
+	Name    string `yaml:"name"`
 }
 
 // Function to read text file return byteResult
