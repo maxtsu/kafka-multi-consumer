@@ -13,7 +13,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Version 0.5
 const config_file = "kafka-config.yaml"
 const numConsumers = 4
 const workerThreads = 4
